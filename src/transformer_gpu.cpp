@@ -110,8 +110,6 @@ void TransformerGPU::test(std::shared_ptr<TransformerImpl>& transformer_gpu)
 // 
 // Library Used: PyTorch C++ API
 TransformerGPU::TransformerGPU(int d_m, int n_h, int n_el, int n_dl, int e_d, int dpo)
-	: d_model(d_m), num_heads(n_h), num_encoder_layers(n_el), num_decoder_layers(n_dl),
-	  embedding_dim(e_d), dropout(dpo)
 {
 	auto transformer_gpu = std::make_shared<TransformerImpl>(d_m, n_h, n_el, n_dl, e_d, dpo);
 }

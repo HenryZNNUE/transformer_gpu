@@ -16,11 +16,6 @@ struct TransformerImpl : torch::nn::Module
 
 struct TransformerGPU : public torch::nn::Module
 {
-	int d_model,
-		num_heads,
-		num_encoder_layers, num_decoder_layers,
-		embedding_dim, dropout;
-
 	torch::Tensor input_tensor, output_tensor;
 
 	void print(torch::Tensor& tensor);
