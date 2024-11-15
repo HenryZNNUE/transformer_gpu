@@ -4,6 +4,16 @@
 #include <Windows.h>
 #endif
 
+// Tranformer on NVIDIA GPU with CUDA
+// 
+// Parameters:
+// e_s: embedding size
+// n_l: number of layers
+// n_h: number of heads
+// n_el: number of encoder layers (default: 6)
+// n_dl: number of decoder layers (default: 6)
+// 
+// Library Used: PyTorch C++ API
 TransformerImpl::TransformerImpl(int d_m, int n_h, int n_el, int n_dl, int e_d, int dpo)
 {
 	auto options = torch::nn::TransformerOptions(d_m, n_h, n_el, n_dl)
@@ -99,16 +109,6 @@ void TransformerGPU::test(std::shared_ptr<TransformerImpl>& transformer_gpu)
 	std::cout << "Accuracy: " << accuracy << std::endl;
 }
 
-// Tranformer on NVIDIA GPU with CUDA
-// 
-// Parameters:
-// e_s: embedding size
-// n_l: number of layers
-// n_h: number of heads
-// n_el: number of encoder layers (default: 6)
-// n_dl: number of decoder layers (default: 6)
-// 
-// Library Used: PyTorch C++ API
 TransformerGPU::TransformerGPU(int d_m, int n_h, int n_el, int n_dl, int e_d, int dpo)
 {
 	auto transformer_gpu = std::make_shared<TransformerImpl>(d_m, n_h, n_el, n_dl, e_d, dpo);
