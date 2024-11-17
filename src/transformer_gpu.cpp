@@ -7,11 +7,12 @@
 // Tranformer on NVIDIA GPU with CUDA
 // 
 // Parameters:
-// e_s: embedding size
-// n_l: number of layers
-// n_h: number of heads
+// d_m: d model (default: 512)
+// n_h: number of heads (default: 8)
 // n_el: number of encoder layers (default: 6)
 // n_dl: number of decoder layers (default: 6)
+// e_d: embedding dimension (default: 2048)
+// dpo: dropout (default: 0.1)
 // 
 // Library Used: PyTorch C++ API
 TransformerImpl::TransformerImpl(int d_m, int n_h, int n_el, int n_dl, int e_d, int dpo)
@@ -119,11 +120,12 @@ TransformerGPU::TransformerGPU(int d_m, int n_h, int n_el, int n_dl, int e_d, in
 // Link: https://lczero.org/blog/2024/02/transformer-progress/
 // 
 // Parameters:
-// e_s: embedding size
-// n_l: number of layers
-// n_h: number of heads
+// d_m: d model (default: 512)
+// n_h: number of heads (default: 8)
 // n_el: number of encoder layers (default: 6)
 // n_dl: number of decoder layers (default: 6)
+// e_d: embedding dimension (default: 2048)
+// dpo: dropout (default: 0.1)
 // 
 // Library Used: PyTorch C++ API
 Transformer_SmolgenImpl::Transformer_SmolgenImpl(int d_m, int n_h, int n_el, int n_dl, int e_d, int dpo)
