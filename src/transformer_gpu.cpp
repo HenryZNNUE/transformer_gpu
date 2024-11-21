@@ -48,7 +48,8 @@ void TransformerGPU::save_model(std::shared_ptr<TransformerImpl>& transformer_gp
 }
 
 torch::Tensor TransformerGPU::generate(std::shared_ptr<TransformerImpl>& transformer_gpu,
-	torch::Tensor& start_token, int max_length)
+	torch::Tensor& start_token,
+	int max_length)
 {
 	transformer_gpu->eval();
 	std::vector<torch::Tensor> generated_tokens;
@@ -162,20 +163,25 @@ Transformer_SmolgenImpl::Transformer_SmolgenImpl(int d_m, int n_h, int n_el, int
 	// Linear 256 (Head Size)
 	for (int i = 0; i < num_heads; ++i)
 	{
+		auto linear = torch::nn::Linear(torch::nn::LinearOptions(256, 256));
+		auto layernorm = torch::nn::LayerNorm(torch::nn::LayerNormOptions({ 256 }));
+
 		linear256_head.emplace_back(register_module("linear256_head_" + std::to_string(i),
-			torch::nn::Linear(torch::nn::LinearOptions(256, 256))));
+			linear));
 		layernorm256_head.emplace_back(register_module("layernorm256_head_" + std::to_string(i),
-			torch::nn::LayerNorm(torch::nn::LayerNormOptions({ 256 }))));
+			layernorm));
 	}
 
 	// Shared Linear 64
+	auto shared_linear = torch::nn::Linear(torch::nn::LinearOptions(64, 64));
+
 	for (int i = 0; i < num_heads; i += 2)
 	{
 		shared_linear64.emplace_back(register_module("shared_linear64_" + std::to_string(i),
-			torch::nn::Linear(torch::nn::LinearOptions(64, 64))));
+			shared_linear));
 		// Sharing weights
-		shared_linear64.emplace_back(register_module("shared_linear64_" + std::to_string(i++),
-			torch::nn::Linear(shared_linear64[i])));
+		shared_linear64.emplace_back(register_module("shared_linear64_" + std::to_string(i + 1),
+			shared_linear));
 	}
 
 	// LayerNorm
@@ -214,7 +220,9 @@ Transformer_SmolgenImpl::Transformer_SmolgenImpl(int d_m, int n_h, int n_el, int
 	this->to(device);
 }
 
-torch::Tensor Transformer_SmolgenImpl::forward(torch::Tensor& x, bool m_attn_mask, bool use_decoder)
+torch::Tensor Transformer_SmolgenImpl::forward(torch::Tensor& x,
+	float temperature,
+	bool m_attn_mask, bool use_decoder)
 {
 	// Multi-Head Attention with Smolgen
 	// Embedding
@@ -246,7 +254,7 @@ torch::Tensor Transformer_SmolgenImpl::forward(torch::Tensor& x, bool m_attn_mas
 	for (int i = 0; i < num_heads; i += 2)
 	{
 		shared_linear64_out = shared_linear64[i]->forward(layernorm256_head_out[i]);
-		shared_linear64_out = shared_linear64[i++]->forward(layernorm256_head_out[i]);
+		shared_linear64_out = shared_linear64[i++]->forward(shared_linear64_out);
 	}
 
 	auto sl64_reshaped = shared_linear64_out.reshape(
@@ -262,7 +270,7 @@ torch::Tensor Transformer_SmolgenImpl::forward(torch::Tensor& x, bool m_attn_mas
 		attn_v.masked_fill_(mask == 0, -std::numeric_limits<float>::infinity());
 	}
 
-	attn_v = torch::softmax(attn_v + sl64_reshaped, -1) * v_reshaped;
+	attn_v = torch::softmax((attn_v + sl64_reshaped) / temperature, -1) * v_reshaped;
 
 	attn_v = attn_v.permute({ 0, 2, 1, 3 }).contiguous().view({ q.size(0), q.size(1), num_heads });
 
@@ -306,7 +314,8 @@ void TransformerGPU_Smolgen::save_model(std::shared_ptr<Transformer_SmolgenImpl>
 }
 
 torch::Tensor TransformerGPU_Smolgen::generate(std::shared_ptr<Transformer_SmolgenImpl>& transformer_smolgen,
-	torch::Tensor& start_token, int max_length,
+	torch::Tensor& start_token,
+	int max_length, float temperature,
 	bool m_attn_mask, bool use_decoder)
 {
 	transformer_smolgen->eval();
@@ -335,7 +344,8 @@ torch::Tensor TransformerGPU_Smolgen::generate(std::shared_ptr<Transformer_Smolg
 }
 
 void TransformerGPU_Smolgen::train(std::shared_ptr<Transformer_SmolgenImpl>& transformer_smolgen,
-	int epoch, bool m_attn_mask, bool use_decoder)
+	int epoch, float temperature,
+	bool m_attn_mask, bool use_decoder)
 {
 	auto criterion = torch::nn::CrossEntropyLoss();
 	auto optimizer = torch::optim::AdamW(transformer_smolgen->parameters());
@@ -363,6 +373,7 @@ void TransformerGPU_Smolgen::train(std::shared_ptr<Transformer_SmolgenImpl>& tra
 }
 
 void TransformerGPU_Smolgen::test(std::shared_ptr<Transformer_SmolgenImpl>& transformer_smolgen,
+	float temperature,
 	bool m_attn_mask, bool use_decoder)
 {
 	transformer_smolgen->eval();

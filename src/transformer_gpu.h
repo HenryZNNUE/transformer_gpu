@@ -21,7 +21,8 @@ struct TransformerGPU : public torch::nn::Module
 	void print(torch::Tensor& tensor);
 	void load_model(std::shared_ptr<TransformerImpl>& transformer_gpu, std::string path);
 	void save_model(std::shared_ptr<TransformerImpl>& transformer_gpu, std::string path);
-	torch::Tensor generate(std::shared_ptr<TransformerImpl>& transformer_gpu, torch::Tensor& start_token, int max_length = 2048);
+	torch::Tensor generate(std::shared_ptr<TransformerImpl>& transformer_gpu,
+		torch::Tensor& start_token, int max_length = 2048);
 	void train(std::shared_ptr<TransformerImpl>& transformer_gpu, int epoch = 30);
 	void test(std::shared_ptr<TransformerImpl>& transformer_gpu);
 	TransformerGPU(int d_m = 512, int n_h = 8,
@@ -42,7 +43,7 @@ struct Transformer_SmolgenImpl : torch::nn::Module
 		int n_el = 6, int n_dl = 6,
 		int e_d = 2048, int dpo = 0.1);
 
-	torch::Tensor forward(torch::Tensor& x, bool m_attn_mask = false, bool use_decoder = false);
+	torch::Tensor forward(torch::Tensor& x, float temperature = 1.0, bool m_attn_mask = false, bool use_decoder = false);
 
 	torch::nn::Linear linear32 = nullptr;
 	torch::nn::Linear  linear256 = nullptr;
@@ -81,11 +82,14 @@ struct TransformerGPU_Smolgen : public torch::nn::Module
 	void save_model(std::shared_ptr<Transformer_SmolgenImpl>& transformer_smolgen,
 		std::string path);
 	torch::Tensor generate(std::shared_ptr<Transformer_SmolgenImpl>& transformer_smolgen,
-		torch::Tensor& start_token, int max_length = 2048,
+		torch::Tensor& start_token,
+		int max_length = 2048, float temperature = 1.0,
 		bool m_attn_mask = false, bool use_decoder = false);
 	void train(std::shared_ptr<Transformer_SmolgenImpl>& transformer_smolgen,
-		int epoch = 30, bool m_attn_mask = false, bool use_decoder = false);
+		int epoch = 30, float temperature = 1.0,
+		bool m_attn_mask = false, bool use_decoder = false);
 	void test(std::shared_ptr<Transformer_SmolgenImpl>& transformer_smolgen,
+		float temperature = 1.0,
 		bool m_attn_mask = false, bool use_decoder = false);
 	TransformerGPU_Smolgen(int d_m = 512, int n_h = 8,
 		int n_el = 6, int n_dl = 6,
