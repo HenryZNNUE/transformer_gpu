@@ -254,7 +254,7 @@ torch::Tensor Transformer_SmolgenImpl::forward(torch::Tensor& x,
 	for (int i = 0; i < num_heads; i += 2)
 	{
 		shared_linear64_out = shared_linear64[i]->forward(layernorm256_head_out[i]);
-		shared_linear64_out = shared_linear64[i++]->forward(shared_linear64_out);
+		shared_linear64_out = shared_linear64[i + 1]->forward(shared_linear64_out);
 	}
 
 	auto sl64_reshaped = shared_linear64_out.reshape(
